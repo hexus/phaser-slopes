@@ -1,0 +1,25 @@
+{
+  "name": "phaser-slopes",
+  "version": "0.1.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"No tests\";"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hexus/phaser-slopes.git"
+  },
+  "author": "Chris Andrew <chris@hexus.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hexus/phaser-slopes/issues"
+  },
+  "homepage": "https://github.com/hexus/phaser-slopes#readme",
+  "dependencies": {
+    "phaser": "^3.11.0"
+  },
+  "devDependencies": {
+    "webpack": "^4.16.5"
+  }
+}
