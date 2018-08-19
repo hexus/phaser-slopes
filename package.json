@@ -11,7 +11,7 @@
     "url": "git+https://github.com/hexus/phaser-slopes.git"
   },
   "author": "Chris Andrew <chris@hexus.io>",
-  "license": "MIT",
+  "license": "ISC",
   "bugs": {
     "url": "https://github.com/hexus/phaser-slopes/issues"
   },
