@@ -91,12 +91,12 @@ Resolver.preSolvePosition = function (pairs) {
 			}
 		}
 		
-		// Accumulate the contacts
+		// Accumulate the contacts of the shortest pair
 		minimumImpulsePair.isActive = true;
 		minimumImpulsePair.collision.parentA.totalContacts += minimumImpulsePair.activeContacts.length;
 		minimumImpulsePair.collision.parentB.totalContacts += minimumImpulsePair.activeContacts.length;
 		
-		// Activate concave edges and edges with similar normals
+		// Activate edge similar to or concave to the shortest edge
 		for (j = 0; j < edgePairs.length; j++) {
 			pair = edgePairs[j];
 			
@@ -107,18 +107,14 @@ Resolver.preSolvePosition = function (pairs) {
 			}
 			
 			// If this edge's normal pushes away from the delta vector between
-			// these edges, we can make a concavity assumption
+			// itself and the other edge, we can assume concavity
 			let edgePositionDelta = Vector.sub(pair.collision.edge.position, minimumImpulsePair.collision.edge.position);
 			
-			if (Vector.dot(edgePositionDelta, pair.collision.edge.normals[1]) < 0) {
+			if (Vector.dot(edgePositionDelta, pair.collision.edge.normals[1]) <= 0) {
 				pair.isActive = true;
 			}
 			
-			// Activate edges with similar normals
-			if (Vector.dot(minimumImpulsePair.collision.normal, pair.collision.normal) > 0.99) {
-				pair.isActive = true;
-			}
-			
+			// Accumulate the contacts of any pairs concave to the shortest pair
 			if (pair.isActive) {
 				scene.ecs.engine.systems.debug.renderMatterBodyEdge(pair.collision.edge);
 				pair.collision.parentA.totalContacts += pair.activeContacts.length;
