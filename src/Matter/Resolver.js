@@ -102,7 +102,6 @@ Resolver.preSolvePosition = function (pairs) {
 			
 			// Skip the minimum pair
 			if (pair === minimumImpulsePair) {
-				scene.ecs.engine.systems.debug.renderMatterBodyEdge(pair.collision.edge);
 				continue;
 			}
 			
@@ -116,7 +115,6 @@ Resolver.preSolvePosition = function (pairs) {
 			
 			// Accumulate the contacts of any pairs concave to the shortest pair
 			if (pair.isActive) {
-				scene.ecs.engine.systems.debug.renderMatterBodyEdge(pair.collision.edge);
 				pair.collision.parentA.totalContacts += pair.activeContacts.length;
 				pair.collision.parentB.totalContacts += pair.activeContacts.length;
 			}

@@ -4,8 +4,11 @@ module.exports = {
 	mode: 'production',
 	output: {
 		path: path.join(__dirname, 'dist'),
-		publicPath: '/dist/',
-		filename: 'phaser-slopes.min.js'
+		filename: 'phaser-slopes.min.js',
+		library: 'Slopes',
+		libraryExport: 'default',
+		libraryTarget: 'umd',
+		umdNamedDefine: true
 	},
 	resolve: {
 		modules: [

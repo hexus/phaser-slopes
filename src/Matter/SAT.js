@@ -39,8 +39,6 @@ const SAT = {
 			hasEdgesB,
 			vertexBody,
 			edgeBody,
-			e,
-			edge,
 			n,
 			result,
 			results = [],
@@ -87,7 +85,7 @@ const SAT = {
 		} else {
 			// Perform full SAT test
 			
-			// Find normals to ignore TODO: May soon be redundant after Box2D port
+			// Find normals to ignore TODO: Remove ignormals
 			ignormals = (bodyA.ignormals || []).concat(bodyB.ignormals || []);
 			
 			for (n = 0; n < bodyA.axes.length; n++) {
@@ -108,9 +106,6 @@ const SAT = {
 			if (((hasEdgesA && !hasEdgesB) || (!hasEdgesA && hasEdgesB))) {
 				edgeBody = hasEdgesA ? bodyA : bodyB;
 				vertexBody = hasEdgesA ? bodyB : bodyA;
-				
-				console.assert(!!edgeBody.edges);
-				console.assert(!vertexBody.edges);
 
 				result = SAT.overlapBodyWithEdges(vertexBody, edgeBody);
 				
@@ -118,13 +113,6 @@ const SAT = {
 					collision.collided = false;
 					return collision;
 				}
-				
-				console.assert(result.flip === true);
-
-				// Flip the axis if we flipped the bodies for the above collision
-				// if (edgeBody !== bodyA) {
-				// 	result.axis = Vector.neg(result.axis);
-				// }
 				
 				// Set the minimum overlap
 				minOverlap.overlap = result.overlap;
@@ -164,8 +152,6 @@ const SAT = {
 						collision.collided = false;
 						return collision;
 					}
-					
-					//console.log(ignormals);
 					
 					// Ensure that the axis we test is facing away from bodyA
 					if (Vector.dot(result.axis, Vector.sub(bodyB.position, bodyA.position)) < 0) {
@@ -232,13 +218,6 @@ const SAT = {
 				y: -minOverlap.axis.y
 			};
 		}
-		
-		// Ensure that the collision normal is facing is the correct direction
-		// if (minOverlap.flip || Vector.dot(minOverlap.axis, Vector.sub(bodyB.position, bodyA.position)) >= 0) {
-		// 	collision.normal = Vector.neg(minOverlap.axis);
-		// } else {
-		// 	collision.normal = Vector.clone(minOverlap.axis);
-		// }
 		
 		collision.tangent = Vector.perp(collision.normal);
 		
@@ -311,8 +290,6 @@ const SAT = {
 			}
 			
 			results.push(edgeResult);
-			
-			//scene.ecs.engine.systems.debug.renderMatterBodyEdge(edgeResult.edge);
 		}
 
 		// Bail, we have no colliding edges
@@ -321,24 +298,13 @@ const SAT = {
 			return result;
 		}
 		
-		console.assert(result.overlap === Number.MAX_VALUE);
+		//console.assert(result.overlap === Number.MAX_VALUE);
 		
 		// Find and return the shortest
 		for (r = 0; r < results.length; r++) {
 			if (results[r].overlap < result.overlap) {
 				result = results[r];
 			}
-		}
-		
-		//scene.ecs.engine.systems.debug.renderMatterBodyEdge(result.edge);
-		
-		if (vertexBody.id === scene.player.body.id) {
-			// scene.ecs.engine.systems.debug.writeOverlapResult(result , {
-			// 	edgeBodyId: edgeBody.id,
-			// 	edgeNormal: result.edge.normalRanges.front.normal
-			// });
-			//console.log('final result body#' + edgeBody.id, 'axis#' + result.axisNumber, result.type, result.axis, result.overlap, result, results);
-			//debugger;
 		}
 		
 		flip = edgeBody.id < vertexBody.id;
@@ -368,31 +334,15 @@ const SAT = {
 		
 		edgeResult = SAT.overlapNormal(vertexBody.vertices, edgeVertices, range.normal);
 		
-		if (vertexBody.id === scene.player.body.id) {
-			// scene.ecs.engine.systems.debug.writeOverlapResult(edgeResult, {
-			// 	edgeBodyId: edgeBody.id,
-			// 	edgeIndex: e
-			// });
-			// console.log('edge result #' + edgeBody.id, edgeResult.axis, edgeResult.overlap, edgeResult, results);
-			//debugger;
-		}
-		
 		// We have a separating axis, skip this edge
 		if (edgeResult.overlap <= 0) {
 			return edgeResult;
 		}
 		
-		// DEBUGGING INDIVIDUAL EDGE
-		// if (edge.index !== 1) {
-		// 	continue;
-		// }
-		
 		edgeResult.axisBody = edgeBody;
 		edgeResult.axisNumber = edge.index;
 		edgeResult.edge = edge;
 		edgeResult.type = 'edge';
-		
-		//scene.ecs.engine.systems.debug.renderMatterBodyEdge(edge);
 		
 		crossLimits = Vector.cross(range.lowerLimit, range.upperLimit);
 		
@@ -406,9 +356,6 @@ const SAT = {
 			if (bodyResult.overlap <= 0) {
 				return bodyResult;
 			}
-			
-			// Debug edge normal only
-			// continue;
 			
 			// TODO: Improve
 			// Force separating from one side of the edge
@@ -440,44 +387,11 @@ const SAT = {
 			bodyResult.edge = edge;
 			bodyResult.type = 'body';
 			
-			if (vertexBody.id === scene.player.body.id) {
-				// scene.ecs.engine.systems.debug.writeOverlapResult(bodyResult, {
-				// 	edgeBodyId: edgeBody.id,
-				// 	edgeNormal: range.normal
-				// });
-			}
-			
 			// Use this result if it has the smallest overlap we've seen so far
 			if (bodyResult.overlap < edgeResult.overlap) {
 				edgeResult = bodyResult;
 			}
 		}
-		
-		// Now that we know the edge collides, we can check whether any
-		// ghost edges have a shorter overlap
-		// let ghostEdgeResult;
-		//
-		// if (edge.normals[0]) {
-		// 	edgeVertices[0] = edge.vertices[0];
-		// 	edgeVertices[1] = edge.vertices[1];
-		// 	ghostEdgeResult = SAT.overlapNormal(vertexBody.vertices, edgeVertices, edge.normals[0]);
-		//
-		// 	if (ghostEdgeResult.overlap < edgeResult) {
-		// 		edgeResult.axis = ghostEdgeResult.axis;
-		// 		edgeResult.overlap = ghostEdgeResult.overlap;
-		// 	}
-		// }
-		//
-		// if (edge.normals[2]) {
-		// 	edgeVertices[0] = edge.vertices[2];
-		// 	edgeVertices[1] = edge.vertices[3];
-		// 	ghostEdgeResult = SAT.overlapNormal(vertexBody.vertices, edgeVertices, edge.normals[2]);
-		//
-		// 	if (ghostEdgeResult.overlap < edgeResult) {
-		// 		edgeResult.axis = ghostEdgeResult.axis;
-		// 		edgeResult.overlap = ghostEdgeResult.overlap;
-		// 	}
-		// }
 		
 		return edgeResult;
 	},
@@ -490,8 +404,6 @@ const SAT = {
 		
 		SAT.projectToAxis(projectionA, verticesA, axis);
 		SAT.projectToAxis(projectionB, verticesB, axis);
-		
-		//console.log(projectionA.min, projectionA.max, projectionB.min, projectionB.max);
 		
 		overlap = Math.min(projectionA.max - projectionB.min, projectionB.max - projectionA.min);
 		
