@@ -1,8 +1,9 @@
 # Phaser 3 Slopes Plugin
 
-A [Phaser 3](https://github.com/photonstorm/phaser) Plugin that smooths out MatterJS tilemap collisions.
+A [Phaser 3](https://github.com/photonstorm/phaser) Plugin that smooths out MatterJS Tilemap Layer collisions.
 
-<img width="49%" src="screenshots/before.gif"/> <img width="49%" src="screenshots/after.gif"/>
+<img width="49%" src="screenshots/before.gif"/>
+<img width="49%" src="screenshots/after.gif"/>
 
 # Usage
 
@@ -20,13 +21,13 @@ import Slopes from 'phaser-slopes';
 class GameScene extends Phaser.Scene
 {
     preload() {
-        this.load.scenePlugin('Slopes', Slopes, 'slopes');
+        this.load.scenePlugin('Slopes', Slopes);
     }
 }
 ```
 
-If you're not using [npm](https://www.npmjs.com/) for dependency management, you can use Phaser to load the plugin as a
-script.
+You can use Phaser to load the plugin as a script you're not using [npm](https://www.npmjs.com/) for dependency
+management.
 
 ```js
 class GameScene extends Phaser.Scene
@@ -37,4 +38,6 @@ class GameScene extends Phaser.Scene
 }
 ```
 
-Any Tilemap Layers you create within the Scene will automatically collide smoothly with other physics bodies.
+Any MatterJS Tilemap Layers you create within the Scene will automatically collide smoothly with other physics bodies.
+
+

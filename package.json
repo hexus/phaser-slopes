@@ -1,7 +1,7 @@
 {
   "name": "phaser-slopes",
   "version": "0.1.0",
-  "description": "A Phaser 3 Plugin that smooths out MatterJS tilemap collisions",
+  "description": "A Phaser 3 Plugin that smooths out MatterJS Tilemap Layer collisions",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"No tests\";"
