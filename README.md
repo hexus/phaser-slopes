@@ -9,7 +9,7 @@ A [Phaser 3](https://github.com/photonstorm/phaser) Plugin that smooths out Matt
 Install the plugin as a dependency of your project using [npm](https://www.npmjs.com/).
 
 ```bash
-npm install hexus/phaser-slopes
+npm install phaser-slopes
 ```
 
 Load the plugin into your Scene.
