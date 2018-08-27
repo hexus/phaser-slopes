@@ -2,8 +2,7 @@
 
 A [Phaser 3](https://github.com/photonstorm/phaser) Plugin that smooths out MatterJS Tilemap Layer collisions.
 
-<img width="49%" src="screenshots/before.gif"/>
-<img width="49%" src="screenshots/after.gif"/>
+<img width="49%" src="screenshots/before.gif"/> <img width="49%" src="screenshots/after.gif"/>
 
 # Usage
 
