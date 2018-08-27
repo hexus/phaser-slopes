@@ -132,6 +132,11 @@ function buildEdge(vertex1, vertex2, tileBody, vertex0, vertex3) {
  * collision time based on the centroid of a colliding polygon being in front
  * of or behind the edges.
  *
+ * Adapted from Box2D's edge collision algorithm. This implementation is used
+ * to pre-process the normal ranges of edges of static bodies, rather than
+ * calculating per-collision.
+ *
+ * @see {@link https://github.com/erincatto/Box2D/blob/336992f/Box2D/Collision/b2CollideEdge.cpp#L221-L456}
  * @param {Object} edge - The edge to build normal ranges for.
  */
 function buildEdgeNormalRanges(edge) {
