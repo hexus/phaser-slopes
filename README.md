@@ -4,6 +4,14 @@ A [Phaser 3](https://github.com/photonstorm/phaser) Plugin that smooths out Matt
 
 <img width="49%" src="screenshots/before.gif"/> <img width="49%" src="screenshots/after.gif"/>
 
+:hammer_and_wrench: This plugin is under development. Feel free to
+[report any issues](https://github.com/hexus/phaser-slopes/issues/new) that you find.
+
+---
+
+Looking for a [Phaser CE](https://github.com/photonstorm/phaser-ce) plugin?
+Check out [hexus/phaser-arcade-slopes](https://github.com/hexus/phaser-arcade-slopes).
+
 # Usage
 
 Install the plugin as a dependency of your project using [npm](https://www.npmjs.com/).
