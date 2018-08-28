@@ -20,7 +20,7 @@ const Axes = {
 				continue;
 			}
 			
-			// Normalise, perp, subtract
+			// Perp, subtract, normalise
 			normals[i] = Vector.normalise({
 				x: vertices[j].y - vertices[i].y,
 				y: vertices[i].x - vertices[j].x

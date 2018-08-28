@@ -1,6 +1,11 @@
 import Vector from 'phaser/src/physics/matter-js/lib/geometry/Vector';
 import Vertices from 'phaser/src/physics/matter-js/lib/geometry/Vertices';
 
+const projectionPool = [
+	{ min: Number.MAX_VALUE, max: Number.MIN_VALUE },
+	{ min: Number.MAX_VALUE, max: Number.MIN_VALUE }
+];
+
 const SAT = {
 	/**
 	 * Detect collision between two bodies using the Separating Axis Theorem.
@@ -34,7 +39,6 @@ const SAT = {
 		let	minOverlap = { overlap: Number.MAX_VALUE },
 			collision,
 			canReusePrevCol = false,
-			ignormals,
 			hasEdgesA,
 			hasEdgesB,
 			vertexBody,
@@ -42,11 +46,8 @@ const SAT = {
 			n,
 			result,
 			results = [],
-			viable,
 			ignored,
-			r,
-			testNormal,
-			i;
+			r;
 		
 		if (previousCollision) {
 			// Estimate the total motion of the previous collision
@@ -84,22 +85,6 @@ const SAT = {
 			}
 		} else {
 			// Perform full SAT test
-			
-			// Find normals to ignore TODO: Remove ignormals
-			ignormals = (bodyA.ignormals || []).concat(bodyB.ignormals || []);
-			
-			for (n = 0; n < bodyA.axes.length; n++) {
-				if (bodyA.axes[n].ignore) {
-					ignormals.push(bodyA.axes[n]);
-				}
-			}
-			
-			for (n = 0; n < bodyB.axes.length; n++) {
-				if (bodyB.axes[n].ignore) {
-					ignormals.push(bodyB.axes[n]);
-				}
-			}
-			
 			hasEdgesA = !!bodyA.edges;
 			hasEdgesB = !!bodyB.edges;
 			
@@ -122,11 +107,17 @@ const SAT = {
 				minOverlap.edge = result.edge;
 				minOverlap.flip = result.flip;
 			} else {
-				// TODO: Optimise by bailing early on < 0 overlaps in each branch/loop, of course, or refactor back into overlapAxes()
+				// TODO: Refactor into overlapBodies()
 				
 				// Perform overlap tests using bodyA's axes
 				for (n = 0; n < bodyA.axes.length; n++) {
 					result = SAT.overlapAxis(bodyA.vertices, bodyB.vertices, bodyA.axes[n]);
+					
+					if (result.overlap <= 0) {
+						collision.collided = false;
+						return collision;
+					}
+					
 					result.axisBody = bodyA;
 					result.axisNumber = n;
 					results.push(result);
@@ -135,13 +126,16 @@ const SAT = {
 				// Perform overlap tests using bodyB's axes
 				for (n = 0; n < bodyB.axes.length; n++) {
 					result = SAT.overlapAxis(bodyB.vertices, bodyA.vertices, bodyB.axes[n]);
+					
+					if (result.overlap <= 0) {
+						collision.collided = false;
+						return collision;
+					}
+					
 					result.axisBody = bodyB;
 					result.axisNumber = n;
 					results.push(result);
 				}
-				
-				viable = false;
-				ignored = false;
 				
 				// Choose the lesser of all results that don't need to be ignored
 				for (r = 0; r < results.length; r++) {
@@ -153,45 +147,16 @@ const SAT = {
 						return collision;
 					}
 					
-					// Ensure that the axis we test is facing away from bodyA
-					if (Vector.dot(result.axis, Vector.sub(bodyB.position, bodyA.position)) < 0) {
-						testNormal = result.axis;
-					} else {
-						testNormal = Vector.neg(result.axis);
-					}
-					
-					// Ensure that we don't need to ignore this axis
-					ignored = false;
-					
-					for (i = 0; i < ignormals.length; i++) {
-						// Test the axis for an approximate match
-						if (Vector.dot(testNormal, ignormals[i]) >= 0.99) {
-							ignored = true;
-							break;
-						}
-					}
-					
-					if (ignored) {
-						continue;
-					}
-					
 					// This is the shortest overlap so far
 					if (result.overlap < minOverlap.overlap) {
-						viable = true;
 						minOverlap = result;
 					}
-				}
-				
-				if (!viable) {
-					collision.collided = false;
-					return collision;
 				}
 			}
 			
 			// The axis index is important for reuse later
 			collision.axisBody = minOverlap.axisBody;
 			collision.axisNumber = minOverlap.axisNumber;
-			collision.ignormals = ignormals;
 		}
 		
 		// Set some further properties on the collision object
@@ -228,9 +193,21 @@ const SAT = {
 		return collision;
 	},
 	
+	/**
+	 * Determine the overlap between two sets of vertices using the given normal.
+	 *
+	 * Like overlapAxis(), except it only separates in the direction of the normal vector
+	 *
+	 * Bails with an overlap of 0 if the projections don't overlap.
+	 *
+	 * @param {Object[]} verticesA
+	 * @param {Object[]} verticesB
+	 * @param {Object} normal
+	 * @returns {Object}
+	 */
 	overlapNormal: function (verticesA, verticesB, normal) {
-		let projectionA = {},// Vector._temp[0], // TODO: Pool projection objects, not vectors
-			projectionB = {},// Vector._temp[1], // TODO: Pool projection objects, not vectors
+		let projectionA = projectionPool[0],
+			projectionB = projectionPool[1],
 			result = { overlap: Number.MAX_VALUE },
 			overlap;
 		
@@ -250,8 +227,6 @@ const SAT = {
 		
 		result.overlap = overlap;
 		result.axis = normal;
-		result.projectionA = projectionA;
-		result.projectionB = projectionB;
 		
 		return result;
 	},
@@ -298,8 +273,6 @@ const SAT = {
 			return result;
 		}
 		
-		//console.assert(result.overlap === Number.MAX_VALUE);
-		
 		// Find and return the shortest
 		for (r = 0; r < results.length; r++) {
 			if (results[r].overlap < result.overlap) {
@@ -321,14 +294,11 @@ const SAT = {
 		let edgeResult = { overlap: Number.MAX_VALUE };
 		let crossLimits;
 		let bodyResult;
-		let inRange;
 		let a;
 		let axis;
 		
-		if (!edgeVertices.length) {
-			edgeVertices[0] = edge.vertices[1];
-			edgeVertices[1] = edge.vertices[2];
-		}
+		edgeVertices[0] = edge.vertices[1];
+		edgeVertices[1] = edge.vertices[2];
 		
 		range = edge.normalRanges.front;
 		
@@ -357,29 +327,15 @@ const SAT = {
 				return bodyResult;
 			}
 			
-			// TODO: Improve
-			// Force separating from one side of the edge
-			if (Vector.dot(axis, range.normal) <= 0) {
-				continue;
-			}
-			
 			// Make sure the vertexBody normal is in the edge's normal range
-			// https://stackoverflow.com/a/43384516/1744006
-			
-			inRange = false;
-			
 			if (crossLimits >= 0) {
-				if (Vector.cross(range.lowerLimit, axis) >= 0 && Vector.cross(axis, range.upperLimit) >= 0) {
-					inRange = true;
+				if (!(Vector.cross(range.lowerLimit, axis) >= 0 && Vector.cross(axis, range.upperLimit) >= 0)) {
+					continue;
 				}
 			} else {
-				if (!(Vector.cross(range.upperLimit, axis) >= 0 && Vector.cross(axis, range.lowerLimit) >= 0)) {
-					inRange = true;
+				if (Vector.cross(range.upperLimit, axis) >= 0 && Vector.cross(axis, range.lowerLimit) >= 0) {
+					continue;
 				}
-			}
-			
-			if (!inRange) {
-				continue;
 			}
 			
 			bodyResult.axisBody = vertexBody;
@@ -396,9 +352,17 @@ const SAT = {
 		return edgeResult;
 	},
 	
+	/**
+	 * Determine the overlap between two sets of vertices when projected onto the given axis.
+	 *
+	 * @param {Object[]} verticesA
+	 * @param {Object[]} verticesB
+	 * @param {Object} axis
+	 * @returns {Object}
+	 */
 	overlapAxis: function (verticesA, verticesB, axis) {
-		let projectionA = Vector._temp[0],
-			projectionB = Vector._temp[1],
+		let projectionA = projectionPool[0],
+			projectionB = projectionPool[1],
 			result = { overlap: Number.MAX_VALUE },
 			overlap;
 		
@@ -419,43 +383,6 @@ const SAT = {
 		}
 		
 		return result;
-	},
-	
-	/**
-	 * Find the overlap between two sets of vertices across the given axes.
-	 *
-	 * @param {Object[]} verticesA
-	 * @param {Object[]} verticesB
-	 * @param {Object[]} axes
-	 * @return {Object[]} results
-	 */
-	overlapAxes: function (verticesA, verticesB, axes) {
-		let projectionA = Vector._temp[0],
-			projectionB = Vector._temp[1],
-			results = [],
-			i,
-			result,
-			overlap,
-			axis;
-		
-		for (i = 0; i < axes.length; i++) {
-			result = {};
-			
-			axis = axes[i];
-			
-			SAT.projectToAxis(projectionA, verticesA, axis);
-			SAT.projectToAxis(projectionB, verticesB, axis);
-			
-			overlap = Math.min(projectionA.max - projectionB.min, projectionB.max - projectionA.min);
-			
-			result.overlap = overlap;
-			result.axis = axis;
-			result.axisNumber = i;
-			
-			results.push(result);
-		}
-		
-		return results;
 	},
 	
 	/**
@@ -508,7 +435,7 @@ const SAT = {
 			vertexB,
 			nextIndex;
 		
-		// find closest vertex on bodyB
+		// Find the closest vertex on bodyB
 		for (i = 0; i < vertices.length; i++) {
 			vertex = vertices[i];
 			vertexToBody.x = vertex.x - bodyAPosition.x;
@@ -521,7 +448,7 @@ const SAT = {
 			}
 		}
 		
-		// find next closest vertex using the two connected to it
+		// Find the next closest vertex using the two connected to it
 		prevIndex = vertexA.index - 1 >= 0 ? vertexA.index - 1 : vertices.length - 1;
 		vertex = vertices[prevIndex];
 		vertexToBody.x = vertex.x - bodyAPosition.x;

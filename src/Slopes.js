@@ -27,8 +27,6 @@ export default class Slopes
 	}
 
 	boot() {
-		console.log('Slopes plugin boot()');
-
 		let events = this.scene.sys.events;
 
 		events.on('start', this.start, this);
@@ -44,8 +42,8 @@ export default class Slopes
 	 * Overrides functions to augment their behaviour.
 	 */
 	start() {
-		if (!Phaser || !Phaser.Physics) {
-			console.warn('Phaser Slopes plugin could not find Phaser during start up');
+		if (!Phaser || !Phaser.Physics || !Phaser.Physics.Matter) {
+			console.warn('Phaser Slopes plugin could not find Phaser or Matter.js during start up');
 			return;
 		}
 		
