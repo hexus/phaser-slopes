@@ -10,7 +10,7 @@ A [Phaser 3](https://github.com/photonstorm/phaser) Plugin that smooths out Matt
 ---
 
 Looking for a [Phaser CE](https://github.com/photonstorm/phaser-ce) plugin?
-Check out [hexus/phaser-arcade-slopes](https://github.com/hexus/phaser-arcade-slopes).
+Check out [Phaser Arcade Slopes](https://github.com/hexus/phaser-arcade-slopes).
 
 # Usage
 
