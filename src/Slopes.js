@@ -57,6 +57,7 @@ export default class Slopes
 		this.overridden.processEdges = World.prototype.processEdges;
 		this.overridden.collides = SAT.collides;
 		this.overridden.fromVertices = Axes.fromVertices;
+		this.overridden.solvePosition = Resolver.solvePosition;
 		this.overridden.preSolvePosition = Resolver.preSolvePosition;
 		
 		// Override these methods
