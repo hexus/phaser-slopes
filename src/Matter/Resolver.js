@@ -5,8 +5,8 @@ let Resolver = {};
 /**
  * Vertex body and edge body collision pairs, keyed by vertex body ID.
  *
- * Shortest separation for a body from its colliding edge bodies can be resolved
- * from these lists of pairs.
+ * The shortest separation for a body from its colliding edge bodies can be
+ * resolved from these lists of pairs.
  *
  * @type {{}}
  * @var edgePairsMap
@@ -33,7 +33,10 @@ Resolver.preSolvePosition = function (pairs) {
 		minimumDepth,
 		minimumImpulsePair;
 	
-	// Find the total number of contacts on each body
+	const debug = scene.ecs.engine.systems.debug;
+	
+	// Find the total number of contacts on each body, build a map of vertex
+	// bodies to their colliding edges
 	for (i = 0; i < pairs.length; i++) {
 		pair = pairs[i];
 		
@@ -49,7 +52,7 @@ Resolver.preSolvePosition = function (pairs) {
 			edgeBody = hasEdgesA ? pair.collision.parentA : pair.collision.parentB;
 			vertexBody = hasEdgesA ? pair.collision.parentB : pair.collision.parentA;
 			
-			// Skip all edge collisions until we flag the smallest and
+			// Disable all edge collisions until we flag the smallest and
 			// accumulate its total contacts
 			pair.isActive = false;
 			
@@ -70,7 +73,7 @@ Resolver.preSolvePosition = function (pairs) {
 	}
 	
 	// Enable the shortest edge collision pair and accumulate its contacts,
-	// then enable pairs roughly concave to that edge
+	// then enable pairs similar to or roughly concave to that shortest edge
 	for (i in edgePairsMap) {
 		edgePairs = edgePairsMap[i];
 		
@@ -91,32 +94,62 @@ Resolver.preSolvePosition = function (pairs) {
 			}
 		}
 		
-		// Accumulate the contacts of the shortest pair
+		if (!minimumImpulsePair) {
+			continue;
+		}
+		
+		// Enable the shortest pair
 		minimumImpulsePair.isActive = true;
+		
+		// Accumulate the contacts of the shortest pair
 		minimumImpulsePair.collision.parentA.totalContacts += minimumImpulsePair.activeContacts.length;
 		minimumImpulsePair.collision.parentB.totalContacts += minimumImpulsePair.activeContacts.length;
 		
-		// Activate edge similar to or concave to the shortest edge
+		// Activate edges similar to or concave to the shortest edge
 		for (j = 0; j < edgePairs.length; j++) {
 			pair = edgePairs[j];
 			
-			// Skip the minimum pair
+			// Skip the minimum pair, it's already active
 			if (pair === minimumImpulsePair) {
+				debug.renderEdgeCollision(pair.collision);
+				//debug.writeCollision(pair.collision, { primary: true });
 				continue;
 			}
 			
-			// If this edge's normal pushes away from the delta vector between
-			// itself and the other edge, we can assume concavity
-			let edgePositionDelta = Vector.sub(pair.collision.edge.position, minimumImpulsePair.collision.edge.position);
+			// Enable edges with normals similar to the shortest edge's collision normal
+			// and edges with normals similar to the shortest edge's actual normal
+			let edgeNormalIsSimilar = Vector.dot(minimumImpulsePair.collision.edge.normals[1], pair.collision.edge.normals[1]) > 0.99;
+			let edgeCollisionIsSimilar = Vector.dot(minimumImpulsePair.collision.normal, pair.collision.normal) > 0.99;
+			let edgeNormalIsSimilarToCollision = Vector.dot(minimumImpulsePair.collision.normal, pair.collision.edge.normals[1]) > 0.99;
 			
-			if (Vector.dot(edgePositionDelta, pair.collision.edge.normals[1]) <= 0) {
+			if (edgeNormalIsSimilar || edgeCollisionIsSimilar || edgeNormalIsSimilarToCollision) {
 				pair.isActive = true;
 			}
 			
-			// Accumulate the contacts of any pairs concave to the shortest pair
+			// If this edge's normal pushes away from the delta vector between
+			// itself and the other edge, we can assume it's concave to the
+			// minimum pair
+			let edgePositionDelta = Vector.sub(pair.collision.edge.position, minimumImpulsePair.collision.edge.position);
+			let edgeIsConcave = Vector.dot(edgePositionDelta, pair.collision.edge.normals[1]) <= 0;
+			let edgeCollisionIsConcave = Vector.dot(edgePositionDelta, pair.collision.normal) <= 0;
+			
+			if (edgeIsConcave || edgeCollisionIsConcave) {
+				pair.isActive = true;
+			}
+			
+			// Accumulate the contacts of any activated pairs
 			if (pair.isActive) {
 				pair.collision.parentA.totalContacts += pair.activeContacts.length;
 				pair.collision.parentB.totalContacts += pair.activeContacts.length;
+			}
+			
+			// Debug rendering
+			if (pair.isActive) {
+				debug.renderEdgeCollision(pair.collision, { lineColor: 0x00ffff });
+				//debug.writeCollision(pair.collision, { secondary: true });
+			} else {
+				debug.renderEdgeCollision(pair.collision, { lineColor: 0xff0000 });
+				//debug.writeCollision(pair.collision, { disabled: true });
 			}
 		}
 	}
