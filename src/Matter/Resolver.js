@@ -33,8 +33,6 @@ Resolver.preSolvePosition = function (pairs) {
 		minimumDepth,
 		minimumImpulsePair;
 	
-	const debug = scene.ecs.engine.systems.debug;
-	
 	// Find the total number of contacts on each body, build a map of vertex
 	// bodies to their colliding edges
 	for (i = 0; i < pairs.length; i++) {
@@ -111,8 +109,6 @@ Resolver.preSolvePosition = function (pairs) {
 			
 			// Skip the minimum pair, it's already active
 			if (pair === minimumImpulsePair) {
-				debug.renderEdgeCollision(pair.collision);
-				//debug.writeCollision(pair.collision, { primary: true });
 				continue;
 			}
 			
@@ -141,15 +137,6 @@ Resolver.preSolvePosition = function (pairs) {
 			if (pair.isActive) {
 				pair.collision.parentA.totalContacts += pair.activeContacts.length;
 				pair.collision.parentB.totalContacts += pair.activeContacts.length;
-			}
-			
-			// Debug rendering
-			if (pair.isActive) {
-				debug.renderEdgeCollision(pair.collision, { lineColor: 0x00ffff });
-				//debug.writeCollision(pair.collision, { secondary: true });
-			} else {
-				debug.renderEdgeCollision(pair.collision, { lineColor: 0xff0000 });
-				//debug.writeCollision(pair.collision, { disabled: true });
 			}
 		}
 	}
