@@ -131,7 +131,7 @@ Resolver.preSolvePosition = function (pairs) {
 			// minimum pair
 			let edgePositionDelta = Vector.sub(pair.collision.edge.position, minimumImpulsePair.collision.edge.position);
 			let edgeIsConcave = Vector.dot(edgePositionDelta, pair.collision.edge.normals[1]) <= 0;
-			let edgeCollisionIsConcave = Vector.dot(edgePositionDelta, pair.collision.normal) <= 0;
+			let edgeCollisionIsConcave = Vector.dot(edgePositionDelta, pair.collision.normal) > 0;
 			
 			if (edgeIsConcave || edgeCollisionIsConcave) {
 				pair.isActive = true;
