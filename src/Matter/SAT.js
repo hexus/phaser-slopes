@@ -106,6 +106,8 @@ const SAT = {
 				minOverlap.axisNumber = result.axisNumber;
 				minOverlap.edge = result.edge;
 				minOverlap.flip = result.flip;
+				minOverlap.type = result.type;
+				minOverlap.range = result.range;
 			} else {
 				// TODO: Refactor into overlapBodies()
 				
@@ -168,6 +170,10 @@ const SAT = {
 		collision.parentA = collision.bodyA.parent;
 		collision.parentB = collision.bodyB.parent;
 		
+		// Debug properties
+		collision.type = minOverlap.type;
+		collision.range = minOverlap.range;
+		
 		bodyA = collision.bodyA;
 		bodyB = collision.bodyB;
 		
@@ -196,7 +202,7 @@ const SAT = {
 	/**
 	 * Determine the overlap between two sets of vertices using the given normal.
 	 *
-	 * Like overlapAxis(), except it only separates in the direction of the normal vector
+	 * Like overlapAxis(), except it only separates in the direction of the normal vector.
 	 *
 	 * Bails with an overlap of 0 if the projections don't overlap.
 	 *
@@ -280,9 +286,9 @@ const SAT = {
 			}
 		}
 		
-		flip = edgeBody.id < vertexBody.id;
-		
-		result.flip = flip;
+		// flip = edgeBody.id < vertexBody.id;
+		//
+		// result.flip = flip;
 		//result.axis = Vector.dot(minOverlap.axis, Vector.sub(bodyB.position, bodyA.position)) < 0 ? Vector.neg(result.axis) : result.axis;
 		
 		return result;
@@ -292,7 +298,6 @@ const SAT = {
 		let edgeVertices = [];
 		let range;
 		let edgeResult = { overlap: Number.MAX_VALUE };
-		let crossLimits;
 		let bodyResult;
 		let a;
 		let axis;
@@ -314,8 +319,6 @@ const SAT = {
 		edgeResult.edge = edge;
 		edgeResult.type = 'edge';
 		
-		crossLimits = Vector.cross(range.lowerLimit, range.upperLimit);
-		
 		// Test each vertexBody normal
 		for (a = 0; a < vertexBody.axes.length; a++) {
 			axis = vertexBody.axes[a];
@@ -328,14 +331,8 @@ const SAT = {
 			}
 			
 			// Make sure the vertexBody normal is in the edge's normal range
-			if (crossLimits >= 0) {
-				if (!(Vector.cross(range.lowerLimit, axis) >= 0 && Vector.cross(axis, range.upperLimit) >= 0)) {
-					continue;
-				}
-			} else {
-				if (Vector.cross(range.upperLimit, axis) >= 0 && Vector.cross(axis, range.lowerLimit) >= 0) {
-					continue;
-				}
+			if (!SAT.isVectorBetween(bodyResult.axis, range.lowerLimit, range.upperLimit)) {
+				continue;
 			}
 			
 			bodyResult.axisBody = vertexBody;
@@ -349,7 +346,71 @@ const SAT = {
 			}
 		}
 		
+		if (edgeResult.type === 'body') {
+			
+			let vectorAngle = Math.atan2(edgeResult.axis.y, edgeResult.axis.x);
+			let lowerAngle = Math.atan2(range.lowerLimit.y, range.lowerLimit.x);
+			let upperAngle = Math.atan2(range.upperLimit.y, range.upperLimit.x);
+			
+			let inbetween = lowerAngle <= vectorAngle && vectorAngle <= upperAngle;
+			
+			inbetween = lowerAngle > upperAngle ? !inbetween : inbetween;
+			
+			console.log(
+				vectorAngle,
+				lowerAngle,
+				upperAngle,
+				inbetween,
+				SAT.isVectorBetween(edgeResult.axis, range.lowerLimit, range.upperLimit),
+				edgeResult.edge
+			);
+			
+			//debugger;
+		}
+		
+		edgeResult.range = range;
+		
 		return edgeResult;
+	},
+	
+	/**
+	 * Determine whether a vector lies between two other vectors.
+	 *
+	 * @param vector
+	 * @param lowerLimit
+	 * @param upperLimit
+	 * @return {boolean}
+	 */
+	isVectorBetween(vector, lowerLimit, upperLimit) {
+		// Deus' approach - use literal angles from atan2
+		let vectorAngle = Math.atan2(vector.y, vector.x);
+		let lowerAngle = Math.atan2(lowerLimit.y, lowerLimit.x);
+		let upperAngle = Math.atan2(upperLimit.y, upperLimit.x);
+
+		let inbetween = lowerAngle <= vectorAngle && vectorAngle <= upperAngle;
+
+		return lowerAngle > upperAngle ? !inbetween : inbetween;
+		
+		
+		// @see https://stackoverflow.com/a/43384516/1744006
+		// let crossLimits = Vector.cross(upperLimit, lowerLimit);
+		//
+		// if (crossLimits >= 0) {
+		// 	if ((Vector.cross(upperLimit, vector) >= 0 && Vector.cross(vector, lowerLimit) >= 0)) {
+		// 		return true;
+		// 	}
+		// } else {
+		// 	if (!(Vector.cross(lowerLimit, vector) >= 0 && Vector.cross(vector, upperLimit) >= 0)) {
+		// 		return true;
+		// 	}
+		// }
+		//
+		// return false;
+		
+		// Alternative method that doesn't seem to work:
+		// @see https://stackoverflow.com/a/17497339/1744006
+		// return (Vector.cross(lowerLimit, normal) * Vector.cross(lowerLimit, upperLimit) >= 0) &&
+		// 	(Vector.cross(upperLimit, normal) * Vector.cross(upperLimit, lowerLimit) >= 0);
 	},
 	
 	/**
