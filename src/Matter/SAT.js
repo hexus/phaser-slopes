@@ -398,13 +398,11 @@ const SAT = {
 		upperAngle = upperAngle >= 0 ? upperAngle : upperAngle + PI2;
 		
 		// Compare the angles
-		let inbetween = lowerAngle <= vectorAngle && vectorAngle <= upperAngle;
-		
-		return inbetween;
-		
-		// Invert the result if the minimum angle is greater than the maximum
-		// TODO: This causes problems
-		// return lowerAngle > upperAngle ? !inbetween : inbetween;
+		if (lowerAngle <= upperAngle) {
+			return lowerAngle <= vectorAngle && vectorAngle <= upperAngle;
+		} else {
+			return lowerAngle <= vectorAngle || vectorAngle <= upperAngle;
+		}
 	},
 	
 	/**
