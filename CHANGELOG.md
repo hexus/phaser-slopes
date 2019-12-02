@@ -1,5 +1,10 @@
 # Phaser 3 Slopes Plugin Change Log
 
+## 0.1.1 - 2nd December 2019
+
+- \#5 \#10 Fixed concave collision issues
+- \#9 Fixed scene restarts breaking due to missing function override (thanks @Tommsy64)
+
 ## 0.1.0 - 27th August 2018
 
 - Initial implementation.  

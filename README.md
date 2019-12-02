@@ -33,7 +33,7 @@ class GameScene extends Phaser.Scene
 }
 ```
 
-You can use Phaser to load the plugin as a script you're not using [npm](https://www.npmjs.com/) for dependency
+You can use Phaser to load the plugin as a script if you're not using [npm](https://www.npmjs.com/) for dependency
 management.
 
 ```js
