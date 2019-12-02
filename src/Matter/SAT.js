@@ -106,8 +106,6 @@ const SAT = {
 				minOverlap.axisNumber = result.axisNumber;
 				minOverlap.edge = result.edge;
 				minOverlap.flip = result.flip;
-				minOverlap.type = result.type;
-				minOverlap.range = result.range;
 			} else {
 				// TODO: Refactor into overlapBodies()
 				
@@ -169,10 +167,6 @@ const SAT = {
 		collision.edge = minOverlap.edge;
 		collision.parentA = collision.bodyA.parent;
 		collision.parentB = collision.bodyB.parent;
-		
-		// Debug properties
-		collision.type = minOverlap.type;
-		collision.range = minOverlap.range;
 		
 		bodyA = collision.bodyA;
 		bodyB = collision.bodyB;
@@ -316,7 +310,7 @@ const SAT = {
 		edgeResult.axisBody = edgeBody;
 		edgeResult.axisNumber = edge.index;
 		edgeResult.edge = edge;
-		edgeResult.type = 'edge';
+		//edgeResult.type = 'edge';
 		
 		// Test each vertexBody normal
 		for (a = 0; a < vertexBody.axes.length; a++) {
@@ -337,36 +331,12 @@ const SAT = {
 			bodyResult.axisBody = vertexBody;
 			bodyResult.axisNumber = a;
 			bodyResult.edge = edge;
-			bodyResult.type = 'body';
+			//bodyResult.type = 'body';
 			
 			// Use this result if it has the smallest overlap we've seen so far
 			if (bodyResult.overlap < edgeResult.overlap) {
 				edgeResult = bodyResult;
 			}
-		}
-		
-		edgeResult.range = range;
-		
-		if (edgeResult.type === 'body') {
-			let vectorAngle = Math.atan2(edgeResult.axis.y, edgeResult.axis.x);
-			let lowerAngle = Math.atan2(range.lowerLimit.y, range.lowerLimit.x);
-			let upperAngle = Math.atan2(range.upperLimit.y, range.upperLimit.x);
-			
-			let inbetween = lowerAngle <= vectorAngle && vectorAngle <= upperAngle;
-			
-			inbetween = lowerAngle > upperAngle ? !inbetween : inbetween;
-			
-			console.log(
-				edgeResult.axis,
-				range.lowerLimit,
-				range.upperLimit,
-				vectorAngle,
-				lowerAngle,
-				upperAngle,
-				SAT.isVectorBetween(edgeResult.axis, range.lowerLimit, range.upperLimit),
-			);
-			
-			//debugger;
 		}
 		
 		return edgeResult;

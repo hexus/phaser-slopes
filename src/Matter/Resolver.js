@@ -116,12 +116,9 @@ Resolver.preSolvePosition = function (pairs) {
 		for (j = 0; j < edgePairs.length; j++) {
 			pair = edgePairs[j];
 			
-			// Skip the minimum pair, it's already active
+			// Skip the shortest pair, it's already active
 			if (pair === shortestPair) {
 				debug.renderEdgeCollision(pair.collision);
-				
-				// if (i == 590) debugger;
-				
 				debug.writeCollision(pair.collision, { primary: true });
 				continue;
 			}
@@ -136,12 +133,9 @@ Resolver.preSolvePosition = function (pairs) {
 				pair.isActive = true;
 			}
 			
-			// If this edge's normal pushes away from the delta vector between
-			// itself and the other edge, we can assume it's concave to the
-			// minimum pair
+			// If the vector between this edge and the shortest oppose the
+			// normal of the shortest, we can assume it's concave
 			let edgePositionDelta = Vector.sub(pair.collision.edge.position, shortestPair.collision.edge.position);
-			
-			// let edgeIsConcave = Vector.dot(edgePositionDelta, pair.collision.edge.normals[1]) >= 0;
 			let edgeIsConcave = Vector.dot(edgePositionDelta, shortestPair.collision.edge.normals[1]) >= 0;
 			let edgeCollisionIsConcave = Vector.dot(edgePositionDelta, pair.collision.normal) >= 0;
 			
