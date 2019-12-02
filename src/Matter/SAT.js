@@ -286,10 +286,9 @@ const SAT = {
 			}
 		}
 		
-		// flip = edgeBody.id < vertexBody.id;
-		//
-		// result.flip = flip;
-		//result.axis = Vector.dot(minOverlap.axis, Vector.sub(bodyB.position, bodyA.position)) < 0 ? Vector.neg(result.axis) : result.axis;
+		// TODO: Try to move this further out if possible
+		flip = edgeBody.id < vertexBody.id;
+		result.flip = flip;
 		
 		return result;
 	},
@@ -346,8 +345,9 @@ const SAT = {
 			}
 		}
 		
+		edgeResult.range = range;
+		
 		if (edgeResult.type === 'body') {
-			
 			let vectorAngle = Math.atan2(edgeResult.axis.y, edgeResult.axis.x);
 			let lowerAngle = Math.atan2(range.lowerLimit.y, range.lowerLimit.x);
 			let upperAngle = Math.atan2(range.upperLimit.y, range.upperLimit.x);
@@ -357,24 +357,23 @@ const SAT = {
 			inbetween = lowerAngle > upperAngle ? !inbetween : inbetween;
 			
 			console.log(
+				edgeResult.axis,
+				range.lowerLimit,
+				range.upperLimit,
 				vectorAngle,
 				lowerAngle,
 				upperAngle,
-				inbetween,
 				SAT.isVectorBetween(edgeResult.axis, range.lowerLimit, range.upperLimit),
-				edgeResult.edge
 			);
 			
 			//debugger;
 		}
 		
-		edgeResult.range = range;
-		
 		return edgeResult;
 	},
 	
 	/**
-	 * Determine whether a vector lies between two other vectors.
+	 * Determine whether a vector's angle lies between those of two other vectors.
 	 *
 	 * @param vector
 	 * @param lowerLimit
@@ -382,35 +381,30 @@ const SAT = {
 	 * @return {boolean}
 	 */
 	isVectorBetween(vector, lowerLimit, upperLimit) {
-		// Deus' approach - use literal angles from atan2
+		// Determine the angles of each vector
 		let vectorAngle = Math.atan2(vector.y, vector.x);
 		let lowerAngle = Math.atan2(lowerLimit.y, lowerLimit.x);
 		let upperAngle = Math.atan2(upperLimit.y, upperLimit.x);
-
+		
+		// Normalize the angles
+		const PI2 = 2 * Math.PI;
+		
+		vectorAngle = vectorAngle % PI2;
+		lowerAngle = lowerAngle % PI2;
+		upperAngle = upperAngle % PI2;
+		
+		vectorAngle = vectorAngle >= 0 ? vectorAngle : vectorAngle + PI2;
+		lowerAngle = lowerAngle >= 0 ? lowerAngle : lowerAngle + PI2;
+		upperAngle = upperAngle >= 0 ? upperAngle : upperAngle + PI2;
+		
+		// Compare the angles
 		let inbetween = lowerAngle <= vectorAngle && vectorAngle <= upperAngle;
-
-		return lowerAngle > upperAngle ? !inbetween : inbetween;
 		
+		return inbetween;
 		
-		// @see https://stackoverflow.com/a/43384516/1744006
-		// let crossLimits = Vector.cross(upperLimit, lowerLimit);
-		//
-		// if (crossLimits >= 0) {
-		// 	if ((Vector.cross(upperLimit, vector) >= 0 && Vector.cross(vector, lowerLimit) >= 0)) {
-		// 		return true;
-		// 	}
-		// } else {
-		// 	if (!(Vector.cross(lowerLimit, vector) >= 0 && Vector.cross(vector, upperLimit) >= 0)) {
-		// 		return true;
-		// 	}
-		// }
-		//
-		// return false;
-		
-		// Alternative method that doesn't seem to work:
-		// @see https://stackoverflow.com/a/17497339/1744006
-		// return (Vector.cross(lowerLimit, normal) * Vector.cross(lowerLimit, upperLimit) >= 0) &&
-		// 	(Vector.cross(upperLimit, normal) * Vector.cross(upperLimit, lowerLimit) >= 0);
+		// Invert the result if the minimum angle is greater than the maximum
+		// TODO: This causes problems
+		// return lowerAngle > upperAngle ? !inbetween : inbetween;
 	},
 	
 	/**
