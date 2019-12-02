@@ -196,7 +196,7 @@ const SAT = {
 	/**
 	 * Determine the overlap between two sets of vertices using the given normal.
 	 *
-	 * Like overlapAxis(), except it only separates in the direction of the normal vector
+	 * Like overlapAxis(), except it only separates in the direction of the normal vector.
 	 *
 	 * Bails with an overlap of 0 if the projections don't overlap.
 	 *
@@ -280,10 +280,9 @@ const SAT = {
 			}
 		}
 		
+		// TODO: Try to move this further out if possible
 		flip = edgeBody.id < vertexBody.id;
-		
 		result.flip = flip;
-		//result.axis = Vector.dot(minOverlap.axis, Vector.sub(bodyB.position, bodyA.position)) < 0 ? Vector.neg(result.axis) : result.axis;
 		
 		return result;
 	},
@@ -292,7 +291,6 @@ const SAT = {
 		let edgeVertices = [];
 		let range;
 		let edgeResult = { overlap: Number.MAX_VALUE };
-		let crossLimits;
 		let bodyResult;
 		let a;
 		let axis;
@@ -312,9 +310,7 @@ const SAT = {
 		edgeResult.axisBody = edgeBody;
 		edgeResult.axisNumber = edge.index;
 		edgeResult.edge = edge;
-		edgeResult.type = 'edge';
-		
-		crossLimits = Vector.cross(range.lowerLimit, range.upperLimit);
+		//edgeResult.type = 'edge';
 		
 		// Test each vertexBody normal
 		for (a = 0; a < vertexBody.axes.length; a++) {
@@ -328,20 +324,14 @@ const SAT = {
 			}
 			
 			// Make sure the vertexBody normal is in the edge's normal range
-			if (crossLimits >= 0) {
-				if (!(Vector.cross(range.lowerLimit, axis) >= 0 && Vector.cross(axis, range.upperLimit) >= 0)) {
-					continue;
-				}
-			} else {
-				if (Vector.cross(range.upperLimit, axis) >= 0 && Vector.cross(axis, range.lowerLimit) >= 0) {
-					continue;
-				}
+			if (!SAT.isVectorBetween(bodyResult.axis, range.lowerLimit, range.upperLimit)) {
+				continue;
 			}
 			
 			bodyResult.axisBody = vertexBody;
 			bodyResult.axisNumber = a;
 			bodyResult.edge = edge;
-			bodyResult.type = 'body';
+			//bodyResult.type = 'body';
 			
 			// Use this result if it has the smallest overlap we've seen so far
 			if (bodyResult.overlap < edgeResult.overlap) {
@@ -350,6 +340,39 @@ const SAT = {
 		}
 		
 		return edgeResult;
+	},
+	
+	/**
+	 * Determine whether a vector's angle lies between those of two other vectors.
+	 *
+	 * @param vector
+	 * @param lowerLimit
+	 * @param upperLimit
+	 * @return {boolean}
+	 */
+	isVectorBetween(vector, lowerLimit, upperLimit) {
+		// Determine the angles of each vector
+		let vectorAngle = Math.atan2(vector.y, vector.x);
+		let lowerAngle = Math.atan2(lowerLimit.y, lowerLimit.x);
+		let upperAngle = Math.atan2(upperLimit.y, upperLimit.x);
+		
+		// Normalize the angles
+		const PI2 = 2 * Math.PI;
+		
+		vectorAngle = vectorAngle % PI2;
+		lowerAngle = lowerAngle % PI2;
+		upperAngle = upperAngle % PI2;
+		
+		vectorAngle = vectorAngle >= 0 ? vectorAngle : vectorAngle + PI2;
+		lowerAngle = lowerAngle >= 0 ? lowerAngle : lowerAngle + PI2;
+		upperAngle = upperAngle >= 0 ? upperAngle : upperAngle + PI2;
+		
+		// Compare the angles
+		if (lowerAngle <= upperAngle) {
+			return lowerAngle <= vectorAngle && vectorAngle <= upperAngle;
+		} else {
+			return lowerAngle <= vectorAngle || vectorAngle <= upperAngle;
+		}
 	},
 	
 	/**

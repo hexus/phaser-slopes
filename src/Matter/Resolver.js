@@ -5,8 +5,8 @@ let Resolver = {};
 /**
  * Vertex body and edge body collision pairs, keyed by vertex body ID.
  *
- * Shortest separation for a body from its colliding edge bodies can be resolved
- * from these lists of pairs.
+ * The shortest separation for a body from its colliding edge bodies can be
+ * resolved from these lists of pairs.
  *
  * @type {{}}
  * @var edgePairsMap
@@ -14,6 +14,13 @@ let Resolver = {};
 
 /**
  * Prepare pairs for position solving.
+ *
+ * This override includes handling for body vs. edge collisions.
+ *
+ * Groups regular bodies with their edge collisions and, for each of them:
+ * - Finds and activates the shortest edge collision
+ * - Activates similar collisions to the shortest, or those from edges concave
+ *   to that of the shortest
  *
  * TODO: Move this override to an isolated event listener.
  *
@@ -31,9 +38,10 @@ Resolver.preSolvePosition = function (pairs) {
 		edgePairsMap = {},
 		edgePairs,
 		minimumDepth,
-		minimumImpulsePair;
+		shortestPair;
 	
-	// Find the total number of contacts on each body
+	// Find the total number of contacts on each body, build a map of vertex
+	// bodies to their colliding edges
 	for (i = 0; i < pairs.length; i++) {
 		pair = pairs[i];
 		
@@ -49,7 +57,7 @@ Resolver.preSolvePosition = function (pairs) {
 			edgeBody = hasEdgesA ? pair.collision.parentA : pair.collision.parentB;
 			vertexBody = hasEdgesA ? pair.collision.parentB : pair.collision.parentA;
 			
-			// Skip all edge collisions until we flag the smallest and
+			// Disable all edge collisions until we flag the smallest and
 			// accumulate its total contacts
 			pair.isActive = false;
 			
@@ -70,7 +78,7 @@ Resolver.preSolvePosition = function (pairs) {
 	}
 	
 	// Enable the shortest edge collision pair and accumulate its contacts,
-	// then enable pairs roughly concave to that edge
+	// then enable pairs similar to or roughly concave to that shortest edge
 	for (i in edgePairsMap) {
 		edgePairs = edgePairsMap[i];
 		
@@ -80,40 +88,58 @@ Resolver.preSolvePosition = function (pairs) {
 		
 		// Find the shortest pair
 		minimumDepth = Number.MAX_VALUE;
-		minimumImpulsePair = null;
+		shortestPair = null;
 		
 		for (j = 0; j < edgePairs.length; j++) {
 			pair = edgePairs[j];
 			
 			if (pair.collision.depth < minimumDepth) {
 				minimumDepth = pair.collision.depth;
-				minimumImpulsePair = pair;
+				shortestPair = pair;
 			}
 		}
 		
-		// Accumulate the contacts of the shortest pair
-		minimumImpulsePair.isActive = true;
-		minimumImpulsePair.collision.parentA.totalContacts += minimumImpulsePair.activeContacts.length;
-		minimumImpulsePair.collision.parentB.totalContacts += minimumImpulsePair.activeContacts.length;
+		if (!shortestPair) {
+			continue;
+		}
 		
-		// Activate edge similar to or concave to the shortest edge
+		// Enable the shortest pair
+		shortestPair.isActive = true;
+		
+		// Accumulate the contacts of the shortest pair
+		shortestPair.collision.parentA.totalContacts += shortestPair.activeContacts.length;
+		shortestPair.collision.parentB.totalContacts += shortestPair.activeContacts.length;
+		
+		// Activate edges similar to or concave to the shortest edge
 		for (j = 0; j < edgePairs.length; j++) {
 			pair = edgePairs[j];
 			
-			// Skip the minimum pair
-			if (pair === minimumImpulsePair) {
+			// Skip the shortest pair, it's already active
+			if (pair === shortestPair) {
 				continue;
 			}
 			
-			// If this edge's normal pushes away from the delta vector between
-			// itself and the other edge, we can assume concavity
-			let edgePositionDelta = Vector.sub(pair.collision.edge.position, minimumImpulsePair.collision.edge.position);
+			// Enable edges with normals similar to the shortest edge's collision normal
+			// and edges with normals similar to the shortest edge's actual normal
+			let edgeNormalIsSimilar = Vector.dot(shortestPair.collision.edge.normals[1], pair.collision.edge.normals[1]) > 0.99;
+			let edgeCollisionIsSimilar = Vector.dot(shortestPair.collision.normal, pair.collision.normal) > 0.99;
+			let edgeNormalIsSimilarToCollision = Vector.dot(shortestPair.collision.normal, pair.collision.edge.normals[1]) > 0.99;
 			
-			if (Vector.dot(edgePositionDelta, pair.collision.edge.normals[1]) <= 0) {
+			if (edgeNormalIsSimilar || edgeCollisionIsSimilar || edgeNormalIsSimilarToCollision) {
 				pair.isActive = true;
 			}
 			
-			// Accumulate the contacts of any pairs concave to the shortest pair
+			// If the vector between this edge and the shortest oppose the
+			// normal of the shortest, we can assume it's concave
+			let edgePositionDelta = Vector.sub(pair.collision.edge.position, shortestPair.collision.edge.position);
+			let edgeIsConcave = Vector.dot(edgePositionDelta, shortestPair.collision.edge.normals[1]) >= 0;
+			let edgeCollisionIsConcave = Vector.dot(edgePositionDelta, pair.collision.normal) >= 0;
+			
+			if (edgeIsConcave || edgeCollisionIsConcave) {
+				pair.isActive = true;
+			}
+			
+			// Accumulate the contacts of any activated pairs
 			if (pair.isActive) {
 				pair.collision.parentA.totalContacts += pair.activeContacts.length;
 				pair.collision.parentB.totalContacts += pair.activeContacts.length;
