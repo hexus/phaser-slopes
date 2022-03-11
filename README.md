@@ -12,7 +12,14 @@ A [Phaser 3](https://github.com/photonstorm/phaser) Plugin that smooths out Matt
 Looking for a [Phaser CE](https://github.com/photonstorm/phaser-ce) plugin?
 Check out [Phaser Arcade Slopes](https://github.com/hexus/phaser-arcade-slopes).
 
-# Usage
+## Compatibility
+
+| Phaser               | Phaser Slopes |
+|----------------------|---------------|
+| 3.12.0-beta - 3.55.x | ^0.1.0        |
+| 3.60.0-beta.4+       | ^0.2.0-beta   |
+
+## Usage
 
 Install the plugin as a dependency of your project using [npm](https://www.npmjs.com/).
 

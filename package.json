@@ -1,9 +1,11 @@
 {
   "name": "phaser-slopes",
-  "version": "0.1.1",
+  "version": "0.2.0-beta",
   "description": "A Phaser 3 Plugin that smooths out MatterJS Tilemap Layer collisions",
   "main": "src/index.js",
   "scripts": {
+    "build": "webpack",
+    "watch": "webpack -w",
     "test": "echo \"No tests\";"
   },
   "repository": {
@@ -17,9 +19,10 @@
   },
   "homepage": "https://github.com/hexus/phaser-slopes#readme",
   "dependencies": {
-    "phaser": "^3.12.0-beta2"
+    "phaser": "^3.60.0-beta.4"
   },
   "devDependencies": {
-    "webpack": "^4.41.2"
+    "webpack": "^4.41.2",
+    "webpack-cli": "^4.9.2"
   }
 }

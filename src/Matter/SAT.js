@@ -8,18 +8,41 @@ const projectionPool = [
 
 const SAT = {
 	/**
+	 * Create a new collision record.
+	 *
+	 * @param {Object} bodyA
+	 * @param {Object} bodyB
+	 */
+	create: function (bodyA, bodyB) {
+		return {
+			pair: null,
+			collided: false,
+			bodyA: bodyA,
+			bodyB: bodyB,
+			parentA: bodyA.parent,
+			parentB: bodyB.parent,
+			depth: 0,
+			normal: { x: 0, y: 0 },
+			tangent: { x: 0, y: 0 },
+			penetration: { x: 0, y: 0 },
+			supports: []
+		}
+	},
+
+	/**
 	 * Detect collision between two bodies using the Separating Axis Theorem.
 	 *
 	 * @param {Object} bodyA - The first body.
 	 * @param {Object} bodyB - The second body.
-	 * @param {Object} previousCollision - The previous collision.
+	 * @param {Object} [pairs] - Optionally reuse collision records from existing pairs.
 	 * @return {Object} The collision result
 	 */
-	collides: function (bodyA, bodyB, previousCollision) {
-		let collision = SAT.collideBodies(bodyA, bodyB, previousCollision);
+	collides: function (bodyA, bodyB, pairs) {
+		// TODO: Collision reuse from pairs argument
+		let collision = SAT.collideBodies(bodyA, bodyB);
 		
 		if (!collision.collided) {
-			return collision;
+			return null;
 		}
 		
 		collision.supports = SAT.findCollisionSupports(collision);
@@ -55,15 +78,15 @@ const SAT = {
 				parentB = bodyB.parent,
 				motion = parentA.speed * parentA.speed + parentA.angularSpeed * parentA.angularSpeed
 					+ parentB.speed * parentB.speed + parentB.angularSpeed * parentB.angularSpeed;
-			
+
 			// We may be able to (partially) reuse collision result, but
 			// it's only safe if collision was resting
 			canReusePrevCol = previousCollision && previousCollision.collided && motion < 0.2 && previousCollision.axisNumber >= 0;
-			
+
 			// Reuse the collision object
 			collision = previousCollision;
 		} else {
-			collision = { collided: false, bodyA: bodyA, bodyB: bodyB };
+			collision = SAT.create(bodyA, bodyB);
 		}
 		
 		// TODO: Restore collision reuse
